@@ -1,5 +1,7 @@
 # 公共配置文件
 spring:
+  main:
+    allow-bean-definition-overriding: true
   application:
     name: XmutOJ-backend-judge-service
   # 默认 dev 环境
@@ -35,6 +37,10 @@ spring:
     multipart:
       # 大小限制
       max-file-size: 10MB
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848
 server:
   address: 0.0.0.0
   port: 8204
@@ -57,3 +63,5 @@ mybatis-plus:
 #代码沙箱配置
 codesandbox:
   type: remote
+knife4j:
+  enable: true

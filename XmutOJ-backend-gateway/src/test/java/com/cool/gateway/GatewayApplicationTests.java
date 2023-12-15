@@ -1,10 +1,10 @@
-package com.cool.xmutojbackendgateway;
+package com.cool.gateway;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class XmutOjBackendGatewayApplicationTests {
+class GatewayApplicationTests {
 
     @Test
     void contextLoads() {

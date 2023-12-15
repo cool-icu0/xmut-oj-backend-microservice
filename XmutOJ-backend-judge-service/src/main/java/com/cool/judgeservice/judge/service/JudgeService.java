@@ -1,4 +1,4 @@
-package com.cool.judgeservice.judge;
+package com.cool.judgeservice.judge.service;
 
 
 import com.cool.backendmodel.model.entity.QuestionSubmit;
