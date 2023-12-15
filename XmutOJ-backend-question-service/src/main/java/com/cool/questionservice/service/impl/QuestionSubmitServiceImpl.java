@@ -15,6 +15,7 @@ import com.cool.backendmodel.model.entity.User;
 import com.cool.backendmodel.model.enums.QuestionSubmitStatusEnum;
 import com.cool.backendmodel.model.enums.QuestionSubmitLanguageEnum;
 import com.cool.backendmodel.model.vo.QuestionSubmitVO;
+import com.cool.questionservice.rabbitmq.CodeMqProducer;
 import com.cool.questionservice.service.QuestionService;
 import com.cool.questionservice.service.QuestionSubmitService;
 import com.cool.serviceclient.service.JudgeFeignClient;
@@ -49,6 +50,9 @@ public class QuestionSubmitServiceImpl extends ServiceImpl<QuestionSubmitMapper,
     @Resource
     @Lazy
     private JudgeFeignClient judgeFeignClient;
+
+    @Resource
+    private CodeMqProducer codeMqProducer;
 
     /**
      * 题目提交
@@ -89,6 +93,9 @@ public class QuestionSubmitServiceImpl extends ServiceImpl<QuestionSubmitMapper,
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "数据插入失败");
         }
         Long questionSubmitId = questionSubmit.getId();
+        //  这里设置成mq消息队列发送消息
+        codeMqProducer.sendMessage("code_exchange","my_routingkey",String.valueOf(questionSubmitId));
+        // 这里设置异步化，执行判题服务
         CompletableFuture.runAsync(()->{
             judgeFeignClient.doJudge(questionSubmitId);
         });
