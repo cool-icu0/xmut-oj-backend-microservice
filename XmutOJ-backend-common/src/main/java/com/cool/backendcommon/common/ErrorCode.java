@@ -19,7 +19,8 @@ public enum ErrorCode {
      */
     NULL_ERROR(40001, "请求数据为空"),
     TOO_MANY_REQUEST(42900, "请求过于频繁"),
-    FORBIDDEN_ERROR(40300, "禁止访问");
+    FORBIDDEN_ERROR(40300, "禁止访问"),
+    INTERNAL_SERVER_ERROR(40500,"文件流内部问题");
     /**
      * 状态码
      */

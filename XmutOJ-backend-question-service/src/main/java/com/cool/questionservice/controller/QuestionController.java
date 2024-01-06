@@ -1,12 +1,10 @@
 package com.cool.questionservice.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.cool.backendcommon.common.*;
+import com.cool.questionservice.mapper.QuestionMapper;
 import com.google.gson.Gson;
 import com.cool.backendcommon.annotation.AuthCheck;
-import com.cool.backendcommon.common.BaseResponse;
-import com.cool.backendcommon.common.DeleteRequest;
-import com.cool.backendcommon.common.ErrorCode;
-import com.cool.backendcommon.common.ResultUtils;
 import com.cool.backendcommon.constant.UserConstant;
 import com.cool.backendcommon.exception.BusinessException;
 import com.cool.backendcommon.exception.ThrowUtils;
@@ -23,11 +21,22 @@ import com.cool.questionservice.service.QuestionSubmitService;
 import com.cool.serviceclient.service.UserFeignClient;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 /**
  * 题目接口
@@ -45,6 +54,8 @@ public class QuestionController {
 
     @Resource
     private QuestionSubmitService questionSubmitService;
+    @Resource
+    private QuestionMapper questionMapper;
 
     private final static Gson GSON = new Gson();
 
@@ -141,6 +152,52 @@ public class QuestionController {
     }
 
     /**
+     * 批量下载MD文件
+     *
+     * @param
+     * @return
+     */
+
+    @PostMapping("/batchDownload")
+    public ResponseEntity<byte[]> batchDownloadQuestions(@RequestBody List<Long> ids) {
+        List<Question> questions = questionMapper.selectBatchIds(ids);
+        if (questions.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+        }
+
+        // 创建临时zip文件
+        byte[] zipFileContent = createTempZipFile(questions);
+
+        // 设置响应头，指定文件名
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=questions.zip");
+
+        // 返回文件内容
+        return ResponseEntity.ok()
+                .headers(headers)
+                .contentLength(zipFileContent.length)
+                .contentType(MediaType.parseMediaType("application/zip"))
+                .body(zipFileContent);
+    }
+
+    private byte[] createTempZipFile(List<Question> questions) {
+        // 创建临时zip文件并写入问题内容，具体实现需要根据业务逻辑进行
+        // 以下是一个简化的示例，实际需要根据具体需求进行实现
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (ZipOutputStream zos = new ZipOutputStream(baos)) {
+            for (Question question : questions) {
+                ZipEntry entry = new ZipEntry("question_" + question.getId() + ".md");
+                zos.putNextEntry(entry);
+                zos.write(question.getContent().getBytes());
+                zos.closeEntry();
+            }
+        } catch (IOException e) {
+            // 处理异常
+        }
+        return baos.toByteArray();
+    }
+
+    /**
      * 更新（仅管理员）
      *
      * @param questionUpdateRequest
@@ -197,6 +254,27 @@ public class QuestionController {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
         return ResultUtils.success(question);
+    }
+    /**
+     * 根据 id 获取
+     *
+     * @param id
+     * @return
+     */
+    @GetMapping("/get2Answer")
+    public BaseResponse<Question> getQuestionById2Answer(long id, HttpServletRequest request) {
+        if (id <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        Question question = questionService.getById(id);
+        if (question == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
+        }
+        User loginUser = userFeignClient.getLoginUser(request);
+        Question q1 = new Question();
+        BeanUtils.copyProperties(q1,question);
+        q1.setAnswer(question.getAnswer());
+        return ResultUtils.success(q1);
     }
 
     /**
